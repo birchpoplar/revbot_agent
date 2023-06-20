@@ -1,0 +1,4 @@
+handle: revbot_agent
+description: Interface with concept revenue recognition app revbot
+more_info_url: ''
+entry_point: main:agent
