@@ -29,6 +29,12 @@ Ask Func[addcustomer]: Alpha
 Func[addcustomer] says: Alpha has ID 5
 A: Customer Alpha was added with ID 5
 
+Q: Who are all the customers in the database?
+Thought: I need to get all customers and list them
+Ask Func[getcustomers]: Please list all customers
+Func[getcustomers] says: There are the customers: Meta, Alpha
+A: Here are the customers: Meta, Alpha
+
 Q: Let's add a contract for customer Alpha in month 5
 Thought: I need to add a contract for customer Alpha (that has integer ID 6) with booked month 5 and get the contract ID
 Ask Func[addcontract]: { "customer_id": 6, "booked_month": 5 }
@@ -42,6 +48,18 @@ Func[addcustomer] says: Beta has ID 7
 Ask Func[addcontract]: { "customer_id": 7, "booked_month": 6 }
 Func[addcontract] says: Contract ID 2 was added for customer Beta with booked month 6
 A: Customer Beta was added with ID 7 and Contract ID 2 was added for customer Beta with booked month 6
+
+Q: Contract 1 for customer Alpha has a revenue segment with name of License, type Product, a total value of 12000, starting 2 months after the contract start date, and lasting 12 months with monthly invoicing that starts at same time as revenue.
+Thought: I need to add a revenue segment for contract 1 for customer Alpha with name License, type Product, a total value of 12000, starting 2 months after the contract start date, and lasting 12 months with monthly invoicing that starts same time as revenue.
+Ask Func[addrevenuesegment]: { "contract_id": 1, "name": "License", "type": "Product", "amount": 12000, "delay_rev_start_mths": 2, "delay_inv_from_rev_mths": 0, "length_rev_mths": 12, "invoice_schedule": "Monthly" }
+Func[addrevenuesegment] says: Revenue segment ID 1 was added for contract 1 for customer Alpha with name License, type Product, a total value of 12000, starting 2 months after the contract start date, and lasting 12 months with monthly invoicing that starts same time as revenue.
+A: Revenue segment ID 1 was added for contract 1 for customer Alpha with name License, type Product, a total value of 12000, starting 2 months after the contract start date, and lasting 12 months with monthly invoicing that starts same time as revenue.
+
+Q: What are all the revenue segments for contract 1 for customer Alpha?
+Thought: I need to get all revenue segments for contract 1 for customer Alpha and list them
+Ask Func[getrevenuesegmentsforcontract]: { "contract_id": 1 }
+Func[getrevenuesegmentsforcontract] says: There are the revenue segments: names are Pilot 1, License, and they have amounts of 10,000 and 12,000 and timelines of 3 and 12 months
+A: Here are the revenue segments: names are Pilot 1, License, and they have amounts of 10,000 and 12,000 and timelines of 3 and 12 months
 """
 
 agent = fixieai.CodeShotAgent(BASE_PROMPT, FEW_SHOTS)
@@ -60,3 +78,34 @@ def addcontract(query: fixieai.Message) -> str:
     response = requests.post(base_url + '/contracts', json=data, headers=headers)
     return response.text
 
+@agent.register_func
+def addrevenuesegment(query: fixieai.Message) -> str:
+    """Add a revenue segment to the database."""
+    data = json.loads(query.text)
+    response = requests.post(base_url + '/revenuesegments', json=data, headers=headers)
+    return response.text
+
+@agent.register_func
+def getcustomers(query: fixieai.Message) -> str:
+    """Get all customers from the database."""
+    response = requests.get(base_url + '/customers', headers=headers)
+    return json.loads(response.text)
+
+@agent.register_func
+def getcontracts(query: fixieai.Message) -> str:
+    """Get all contracts from the database."""
+    response = requests.get(base_url + '/contracts', headers=headers)
+    return json.loads(response.text)
+
+@agent.register_func
+def getrevenuesegments(query: fixieai.Message) -> str:
+    """Get all revenue segments from the database."""
+    response = requests.get(base_url + '/revenuesegments', headers=headers)
+    return json.loads(response.text)
+
+@agent.register_func
+def getrevenuesegmentsforcontract(query: fixieai.Message) -> str:
+    """Get all revenue segments for a contract from the database."""
+    data = {'contract_id': json.loads(query.text)['contract_id']}
+    response = requests.get((base_url + '/contracts/' + str(data['contract_id']) + '/revenuesegments'), json=data, headers=headers)
+    return json.loads(response.text)
